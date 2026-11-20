@@ -70,7 +70,12 @@ jobs:
         run: pnpm --filter @academy-library/api db:check-invariants
         env:
           DATABASE_URL: postgresql://academy:academy@localhost:5433/academy_library_test?schema=public
-
+          # This script imports the app's shared `prisma` client
+          # (src/lib/prisma.ts), which pulls in full env validation
+          # (src/config/env.ts) — including CSRF_SECRET, even though this
+          # script never touches CSRF at all. A fixed, obviously-fake
+          # value, same as apps/api/vitest.config.ts's own test env.
+          CSRF_SECRET: test-csrf-secret-do-not-use-in-production-00000000
       - name: Format check
         run: pnpm format:check
 
