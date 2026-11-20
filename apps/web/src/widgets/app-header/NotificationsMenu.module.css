@@ -1,0 +1,41 @@
+/* Higher specificity than Dropdown.module.css's `.trigger` (one class),
+   so this reliably wins regardless of CSS bundling order. */
+button.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--color-text-secondary);
+}
+
+button.trigger svg {
+  width: 20px;
+  height: 20px;
+}
+
+button.trigger:hover {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+}
+
+.panel {
+  width: 280px;
+}
+
+.heading {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.empty {
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}

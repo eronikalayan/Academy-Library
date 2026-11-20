@@ -1,0 +1,15 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin-top: var(--space-4);
+}
+
+.retryRow {
+  margin-top: var(--space-3);
+}
+
+.paginationRow {
+  margin-top: var(--space-5);
+}

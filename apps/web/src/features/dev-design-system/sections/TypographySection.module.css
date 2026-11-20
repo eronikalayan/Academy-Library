@@ -1,0 +1,53 @@
+.scale {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.display3xl {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+}
+
+.display2xl {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+}
+
+.displayXl {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-primary);
+}
+
+.headingLg {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.bodyBase {
+  max-width: 36rem;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.bodySm {
+  max-width: 36rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.caption {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}

@@ -1,0 +1,7 @@
+.search {
+  width: 100%;
+}
+
+.clearButton {
+  margin-right: calc(var(--space-1) * -1);
+}

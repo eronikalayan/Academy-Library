@@ -1,0 +1,59 @@
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.spinner {
+  color: currentColor;
+  animation: spin 800ms linear infinite;
+}
+
+.sm {
+  width: 14px;
+  height: 14px;
+}
+
+.md {
+  width: 20px;
+  height: 20px;
+}
+
+.lg {
+  width: 28px;
+  height: 28px;
+}
+
+.track {
+  stroke: currentColor;
+  opacity: 0.2;
+}
+
+.indicator {
+  stroke: currentColor;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A continuous spin is the whole point of this component, so reduced
+   motion swaps it for a gentle pulse rather than freezing it solid —
+   losing all feedback that something is loading would be worse. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+}

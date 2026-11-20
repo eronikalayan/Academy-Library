@@ -1,0 +1,188 @@
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--space-5);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+}
+
+.header {
+  margin-bottom: var(--space-6);
+}
+
+.manageActions {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.title {
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--color-text-primary);
+}
+
+.description {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-base);
+  white-space: pre-line;
+}
+
+/* Two-column composition, mirroring ResourceDetailsPage: the resource
+   list + add panel on the left, a compact "at a glance" fact sheet on
+   the right, instead of one narrow stacked column. Collapses to one
+   column below the same 1024px breakpoint the app shell uses. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: var(--space-8);
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.main {
+  min-width: 0;
+}
+
+.sidebar {
+  min-width: 0;
+}
+
+.metaCard {
+  position: sticky;
+  top: var(--space-6);
+}
+
+.metaCardTitle {
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.metaList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.metaItem dt {
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metaItem dd {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.metaIcon {
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-muted);
+}
+
+/* The calm, informational alternative to a warning banner for
+   RESTRICTED visibility — a plain-language caption attached to the
+   fact itself, not a separate alarming component. */
+.metaCaption {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+}
+
+.section {
+  margin-bottom: var(--space-6);
+}
+
+.sectionTitle {
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.resourceList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.mutationError {
+  margin-top: var(--space-3);
+}
+
+.addPanelCard {
+  margin-top: var(--space-5);
+}
+
+.retryRow {
+  margin-top: var(--space-3);
+}
+
+.loadingBody {
+  max-width: 48rem;
+  margin-top: var(--space-5);
+}
+
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-16) var(--space-4);
+  text-align: center;
+}
+
+.notFoundIcon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.notFoundTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.notFoundSubtitle {
+  color: var(--color-text-secondary);
+}
+
+.notFoundLink {
+  margin-top: var(--space-2);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+}

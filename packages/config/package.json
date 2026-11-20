@@ -1,0 +1,11 @@
+{
+  "name": "@academy-library/config",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Shared TypeScript compiler configuration for Academy Library workspaces.",
+  "license": "UNLICENSED",
+  "files": [
+    "tsconfig.base.json",
+    "tsconfig.node.json"
+  ]
+}

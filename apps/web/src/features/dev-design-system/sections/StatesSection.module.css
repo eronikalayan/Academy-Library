@@ -1,0 +1,24 @@
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.blockLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.spinnerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--color-accent);
+}
+
+.alertStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

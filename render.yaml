@@ -1,0 +1,57 @@
+services:
+  - type: web
+    name: academy-library-api
+    runtime: docker
+    # Repo root context is required — apps/api/Dockerfile COPYs
+    # pnpm-workspace.yaml, packages/config, packages/contracts, and
+    # apps/api from root-relative paths to install the pnpm workspace's
+    # full dependency graph (the API package depends on the
+    # @academy-library/contracts workspace package). Pointing Render's
+    # Docker context at apps/api instead would make every one of those
+    # COPY paths fail to resolve.
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render's documented default for Docker web services — the app
+      # reads this via src/config/env.ts (already configurable, no code
+      # change needed). Confirm this matches whatever Render's dashboard
+      # shows for this service after the first deploy.
+      - key: PORT
+        value: '10000'
+      - key: HOST
+        value: 0.0.0.0
+      # Set manually in the Render dashboard after creating the Neon
+      # database — see docs/deployment/free-hosting.md. Use the pooled
+      # ("-pooler") connection string with connection_limit/pool_timeout
+      # query params appropriate for Neon's free-tier connection cap.
+      - key: DATABASE_URL
+        sync: false
+      # Set manually once the Vercel deployment's real domain is known —
+      # a comma-separated list if there's more than one (e.g. the
+      # production domain and a preview domain). Chicken-and-egg with
+      # the Vercel rewrite destination (which needs *this* service's
+      # URL) — see docs/deployment/free-hosting.md for the exact order.
+      - key: CORS_ORIGIN
+        sync: false
+      # Render generates a cryptographically random value for this on
+      # first deploy — satisfies the >=32-character minimum
+      # src/config/env.ts enforces. Never reuse a local/dev CSRF_SECRET
+      # here.
+      - key: CSRF_SECRET
+        generateValue: true
+      - key: SESSION_COOKIE_NAME
+        value: academy_session
+      - key: SESSION_TTL_HOURS
+        value: '720'
+      # Safe-by-default: this demo has no email verification or
+      # password reset (see docs/architecture/authentication.md, "Known
+      # limitations"). Flip to "true" only if you deliberately want
+      # public self-registration open on this deployment.
+      - key: REGISTRATION_ENABLED
+        value: 'false'
+      - key: LOG_LEVEL
+        value: info

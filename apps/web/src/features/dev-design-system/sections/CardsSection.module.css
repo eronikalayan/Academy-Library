@@ -1,0 +1,47 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.metaItem svg {
+  width: 14px;
+  height: 14px;
+}
+
+.statRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.statRow > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.statTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.statSubtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}

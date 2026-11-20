@@ -1,0 +1,23 @@
+.search {
+  max-width: 420px;
+  margin-bottom: var(--space-5);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-5);
+}
+
+.gridUpdating {
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.retryRow {
+  margin-top: var(--space-3);
+}
+
+.paginationRow {
+  margin-top: var(--space-5);
+}

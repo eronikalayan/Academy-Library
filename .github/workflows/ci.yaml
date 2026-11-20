@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Lint, type-check, test, build
+    runs-on: ubuntu-latest
+    # Integration tests (apps/api/tests/auth.routes.test.ts,
+    # resources.routes.test.ts) run against a real Postgres, not a mock —
+    # see docs/architecture/authentication.md ("Testing strategy") and
+    # docs/domain/resources.md ("Database schema"). Published on 5433,
+    # matching apps/api/vitest.config.ts's hardcoded test DATABASE_URL
+    # exactly, so the same config works locally and in CI without
+    # branching on environment.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: academy
+          POSTGRES_PASSWORD: academy
+          POSTGRES_DB: academy_library_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U academy -d academy_library_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Apply migrations to the test database
+        run: pnpm --filter @academy-library/api db:migrate:deploy
+        env:
+          DATABASE_URL: postgresql://academy:academy@localhost:5433/academy_library_test?schema=public
+
+      # Guards against exactly the kind of drift `prisma migrate dev` has
+      # repeatedly proposed locally across Tasks 05B–07: the generated
+      # `searchVector` column, its GIN/trigram indexes, the
+      # case-insensitive email uniqueness index, the resource duration
+      # CHECK constraint, and the active-loan partial unique index all
+      # have no `schema.prisma` syntax, so nothing else in this pipeline
+      # would notice if a migration silently dropped one. See
+      # apps/api/scripts/checkDbInvariants.ts.
+      - name: Verify database invariants
+        run: pnpm --filter @academy-library/api db:check-invariants
+        env:
+          DATABASE_URL: postgresql://academy:academy@localhost:5433/academy_library_test?schema=public
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build

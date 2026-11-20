@@ -1,0 +1,12 @@
+.retryRow {
+  margin-top: var(--space-3);
+}
+
+.updating {
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.paginationRow {
+  margin-top: var(--space-5);
+}

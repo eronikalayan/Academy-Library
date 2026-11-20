@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Academy Library</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    />
+    <script>
+      // Applies a previously-chosen theme before the first paint, so there
+      // is no flash of the wrong theme while React boots. When nothing is
+      // stored, `data-theme` is left unset and the `prefers-color-scheme`
+      // media query in tokens.css takes over. See ThemeProvider.
+      (function () {
+        try {
+          var stored = localStorage.getItem('academy-library:theme');
+          if (stored === 'light' || stored === 'dark') {
+            document.documentElement.setAttribute('data-theme', stored);
+          }
+        } catch {
+          // localStorage can throw in locked-down environments (e.g.
+          // private browsing with storage disabled) — system preference
+          // is a safe fallback.
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

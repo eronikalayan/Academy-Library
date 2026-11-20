@@ -1,0 +1,46 @@
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.toolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.toolbarSpacer {
+  flex: 1;
+}
+
+.filterCountBadge {
+  margin-left: var(--space-2);
+}
+
+.retryRow {
+  margin-top: var(--space-3);
+}
+
+.resultCount {
+  margin-bottom: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.gridUpdating {
+  opacity: 0.6;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.paginationRow {
+  margin-top: var(--space-6);
+}
+
+@media (max-width: 480px) {
+  .toolbarRow {
+    justify-content: space-between;
+  }
+}

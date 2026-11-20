@@ -1,0 +1,276 @@
+/**
+ * Design tokens for Academy Library.
+ *
+ * Two layers:
+ *   1. `--palette-*`  — raw color primitives (a scale per hue). Components
+ *      never reference these directly.
+ *   2. `--color-*`     — semantic tokens that components consume. These are
+ *      redefined per theme; everything else (spacing, type, radius, shadow,
+ *      transition, z-index) is theme-independent.
+ *
+ * Theming: light values live on `:root`. Dark values are applied either by
+ * `prefers-color-scheme: dark` (system default) or by an explicit
+ * `data-theme="dark"` on `<html>` (user override, see ThemeProvider), which
+ * always wins over the system preference. See docs/design-system/README.md
+ * for the full rationale, including why a couple of the brief's suggested
+ * colors were darkened slightly for AA contrast.
+ */
+
+:root {
+  /* ---- Palette: neutrals (cool, slightly blue-tinted) ---- */
+  --palette-white: #ffffff;
+  --palette-neutral-50: #f8f9fc;
+  --palette-neutral-100: #f1f2f7;
+  --palette-neutral-150: #e6e8ef;
+  --palette-neutral-200: #dadce6;
+  --palette-neutral-300: #c3c6d4;
+  --palette-neutral-400: #9ca1b5;
+  --palette-neutral-500: #6b7280;
+  --palette-neutral-600: #64748b;
+  --palette-neutral-700: #4b5368;
+  --palette-neutral-800: #2e3449;
+  --palette-neutral-900: #151b2c;
+  --palette-neutral-950: #0b0e18;
+
+  /* ---- Palette: accent (purple) ---- */
+  --palette-accent-50: #f2f0fd;
+  --palette-accent-100: #e6e2fb;
+  --palette-accent-300: #9284e9;
+  --palette-accent-400: #7565e8;
+  --palette-accent-500: #6452d6;
+  --palette-accent-700: #5340b8;
+  --palette-accent-800: #423297;
+  --palette-accent-900: #241f42;
+
+  /* ---- Palette: semantic hues ---- */
+  --palette-success-50: #e7f6f1;
+  --palette-success-500: #16866a;
+  --palette-warning-50: #fbf1de;
+  --palette-warning-500: #c58a25;
+  --palette-warning-700: #8a6115;
+  --palette-danger-50: #fbe7e9;
+  --palette-danger-500: #b83847;
+  --palette-danger-700: #9c2e3b;
+  --palette-danger-800: #7f2630;
+
+  /* ================= Semantic tokens (light, default) ================= */
+  --color-bg: var(--palette-neutral-50);
+  --color-bg-subtle: var(--palette-neutral-100);
+  --color-surface: var(--palette-white);
+  --color-surface-hover: var(--palette-neutral-50);
+  --color-border: var(--palette-neutral-150);
+  --color-border-strong: var(--palette-neutral-300);
+
+  --color-text-primary: var(--palette-neutral-900);
+  --color-text-secondary: var(--palette-neutral-600);
+  --color-text-muted: var(--palette-neutral-500);
+  --color-text-on-accent: var(--palette-white);
+
+  /* Text/icon/link accent — tuned against the page background. */
+  --color-accent: var(--palette-accent-500);
+  --color-accent-hover: var(--palette-accent-700);
+  --color-accent-subtle: var(--palette-accent-50);
+  --color-accent-subtle-text: var(--palette-accent-700);
+
+  /* Solid-fill accent (primary buttons) — tuned for a white label,
+     independent of page background, so it is intentionally the same
+     value in both themes. */
+  --color-accent-fill: var(--palette-accent-500);
+  --color-accent-fill-hover: var(--palette-accent-700);
+  --color-accent-fill-active: var(--palette-accent-800);
+
+  --color-focus-ring: var(--palette-accent-500);
+
+  --color-success: var(--palette-success-500);
+  --color-success-subtle: var(--palette-success-50);
+  --color-success-subtle-text: var(--palette-success-500);
+
+  --color-warning: var(--palette-warning-500);
+  --color-warning-subtle: var(--palette-warning-50);
+  --color-warning-subtle-text: var(--palette-warning-700);
+
+  --color-danger: var(--palette-danger-500);
+  --color-danger-subtle: var(--palette-danger-50);
+  --color-danger-subtle-text: var(--palette-danger-500);
+
+  /* Solid-fill danger (destructive buttons) — same reasoning and the
+     same theme-independence as --color-accent-fill above. */
+  --color-danger-fill: var(--palette-danger-500);
+  --color-danger-fill-hover: var(--palette-danger-700);
+  --color-danger-fill-active: var(--palette-danger-800);
+
+  --color-overlay: rgb(11 14 24 / 44%);
+
+  /* ================= Typography ================= */
+  --font-family-base: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-lg: 1.25rem; /* 20px */
+  --font-size-xl: 1.75rem; /* 28px */
+  --font-size-2xl: 2rem; /* 32px */
+  --font-size-3xl: 2.5rem; /* 40px */
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.35;
+  --line-height-base: 1.5;
+
+  --letter-spacing-tight: -0.01em;
+
+  /* ================= Spacing (4px base unit) ================= */
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+  --space-10: 2.5rem; /* 40px */
+  --space-12: 3rem; /* 48px */
+  --space-16: 4rem; /* 64px */
+
+  /* ================= Radius ================= */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ================= Elevation ================= */
+  --shadow-xs: 0 1px 2px rgb(21 27 44 / 4%);
+  --shadow-sm: 0 1px 3px rgb(21 27 44 / 8%), 0 1px 2px rgb(21 27 44 / 4%);
+  --shadow-md: 0 4px 10px rgb(21 27 44 / 8%), 0 2px 4px rgb(21 27 44 / 4%);
+  --shadow-lg: 0 12px 24px rgb(21 27 44 / 12%), 0 4px 8px rgb(21 27 44 / 4%);
+
+  /* ================= Motion ================= */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 260ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* ================= Z-index layers ================= */
+  --z-dropdown: 1000;
+  --z-modal-backdrop: 1200;
+  --z-modal: 1210;
+  --z-tooltip: 1300;
+  --z-toast: 1400;
+
+  /* ================= Layout ================= */
+  --content-max-width: 72rem;
+  --layout-header-height: 3.5rem;
+  --layout-sidebar-width: 17rem;
+  --layout-sidebar-width-collapsed: 4.5rem;
+  --layout-drawer-width: 18rem;
+
+  /*
+   * Breakpoints — documented here for reference and kept in sync by hand
+   * with src/shared/breakpoints.ts (CSS custom properties cannot be
+   * interpolated into @media conditions, so the source of truth for
+   * actual media queries/JS matching is that file, not these variables).
+   */
+  --breakpoint-sm: 480px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+}
+
+/* ================= Dark theme ================= */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-bg: var(--palette-neutral-950);
+    --color-bg-subtle: #11141f;
+    --color-surface: #141827;
+    --color-surface-hover: #1b2032;
+    --color-border: #262b3d;
+    --color-border-strong: #383f57;
+
+    --color-text-primary: #f1f2f7;
+    --color-text-secondary: #a8adc0;
+    --color-text-muted: #7d8299;
+    --color-text-on-accent: #ffffff;
+
+    --color-accent: var(--palette-accent-300);
+    --color-accent-hover: #a99cf0;
+    --color-accent-subtle: var(--palette-accent-900);
+    --color-accent-subtle-text: #c3b8f7;
+
+    --color-focus-ring: var(--palette-accent-300);
+
+    --color-success: #3dd9a4;
+    --color-success-subtle: #0f2a21;
+    --color-success-subtle-text: #7feac2;
+
+    --color-warning: #e3a53d;
+    --color-warning-subtle: #2e2210;
+    --color-warning-subtle-text: #f2c772;
+
+    --color-danger: #f0707e;
+    --color-danger-subtle: #331015;
+    --color-danger-subtle-text: #f5a0ac;
+
+    --color-overlay: rgb(0 0 0 / 60%);
+
+    --shadow-xs: 0 1px 2px rgb(0 0 0 / 30%);
+    --shadow-sm: 0 1px 3px rgb(0 0 0 / 40%), 0 1px 2px rgb(0 0 0 / 30%);
+    --shadow-md: 0 4px 10px rgb(0 0 0 / 45%), 0 2px 4px rgb(0 0 0 / 30%);
+    --shadow-lg: 0 12px 28px rgb(0 0 0 / 50%), 0 4px 10px rgb(0 0 0 / 30%);
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-bg: var(--palette-neutral-950);
+  --color-bg-subtle: #11141f;
+  --color-surface: #141827;
+  --color-surface-hover: #1b2032;
+  --color-border: #262b3d;
+  --color-border-strong: #383f57;
+
+  --color-text-primary: #f1f2f7;
+  --color-text-secondary: #a8adc0;
+  --color-text-muted: #7d8299;
+  --color-text-on-accent: #ffffff;
+
+  --color-accent: var(--palette-accent-300);
+  --color-accent-hover: #a99cf0;
+  --color-accent-subtle: var(--palette-accent-900);
+  --color-accent-subtle-text: #c3b8f7;
+
+  --color-focus-ring: var(--palette-accent-300);
+
+  --color-success: #3dd9a4;
+  --color-success-subtle: #0f2a21;
+  --color-success-subtle-text: #7feac2;
+
+  --color-warning: #e3a53d;
+  --color-warning-subtle: #2e2210;
+  --color-warning-subtle-text: #f2c772;
+
+  --color-danger: #f0707e;
+  --color-danger-subtle: #331015;
+  --color-danger-subtle-text: #f5a0ac;
+
+  --color-overlay: rgb(0 0 0 / 60%);
+
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 40%), 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-md: 0 4px 10px rgb(0 0 0 / 45%), 0 2px 4px rgb(0 0 0 / 30%);
+  --shadow-lg: 0 12px 28px rgb(0 0 0 / 50%), 0 4px 10px rgb(0 0 0 / 30%);
+}
+
+/* Respect reduced-motion preference globally via the duration tokens, so
+   components never need their own media query. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0.01ms;
+    --duration-base: 0.01ms;
+    --duration-slow: 0.01ms;
+  }
+}

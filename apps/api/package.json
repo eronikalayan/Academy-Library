@@ -1,0 +1,56 @@
+{
+  "name": "@academy-library/api",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Academy Library API — Express + Prisma backend.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed:public-demo": "tsx prisma/seedPublicDemo.ts",
+    "db:check-invariants": "tsx scripts/checkDbInvariants.ts",
+    "test:e2e:reset-db": "tsx scripts/resetAndSeedDatabase.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@academy-library/contracts": "workspace:*",
+    "@node-rs/argon2": "^2.2.2",
+    "@prisma/client": "^6.0.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "csrf-csrf": "^4.1.0",
+    "express": "^5.0.1",
+    "express-rate-limit": "^8.7.4",
+    "helmet": "^8.0.0",
+    "pino": "^9.5.0",
+    "pino-http": "^10.3.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@academy-library/config": "workspace:*",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.9.0",
+    "@types/supertest": "^6.0.2",
+    "pino-pretty": "^11.3.0",
+    "prisma": "^6.0.1",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

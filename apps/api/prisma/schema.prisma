@@ -1,0 +1,571 @@
+// Prisma schema for Academy Library.
+//
+// Task 05A introduced the first real business models — User and Session,
+// the foundation for database-backed authentication. The Task 01
+// `SchemaProbe` placeholder was removed in that same migration.
+//
+// Task 05B introduces the Resource domain: Resource/Course/Tag (plus the
+// ResourceTag/ResourceCourse join tables) and, since restricted-visibility
+// resources need somewhere to point, a minimal Group/GroupMembership/
+// ResourceGroup foundation — none of these existed before this task. See
+// docs/domain/resources.md for the full domain write-up and
+// docs/architecture/decisions.md for the search/authorization rationale.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  LECTURER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+/// Case-insensitive email uniqueness is enforced by a hand-written
+/// functional unique index on `lower(email)` in this model's migration —
+/// not a `citext` column or the `postgresqlExtensions` preview feature,
+/// to avoid depending on a non-GA Prisma feature. The index is a DB-level
+/// safety net: the application always normalizes (trims + lowercases)
+/// email before writing or querying, so the normal query path never
+/// needs raw SQL — see docs/architecture/authentication.md ("Database
+/// schema") for the full rationale, including the one sharp edge this
+/// creates for future `prisma migrate dev` runs.
+model User {
+  id           String     @id @default(uuid())
+  email        String     @db.VarChar(255)
+  passwordHash String
+  displayName  String     @db.VarChar(160)
+  role         Role       @default(STUDENT)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  sessions         Session[]
+  groupMemberships GroupMembership[]
+  ownedResources   Resource[]
+  ownedCollections Collection[]
+  savedResources   SavedResource[]
+  loans            Loan[]
+
+  @@map("users")
+}
+
+/// An opaque, database-backed session. Only `tokenHash` (SHA-256 of the
+/// random session token) is ever stored — the raw token exists only in
+/// the HttpOnly cookie on the client, never in this table, a log, or an
+/// API response. `lastUsedAt` exists for support/observability (seeing
+/// whether a session is actually active) and as the basis for a future
+/// idle-session cleanup job — this task does not implement sliding
+/// expiration from it.
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  tokenHash  String   @unique @db.VarChar(64)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------
+// Resource domain (Task 05B)
+// ---------------------------------------------------------------------
+
+enum ResourceType {
+  BOOK
+  ARTICLE
+  VIDEO
+  EXERCISE
+  RECORDING
+  OTHER
+}
+
+enum ResourceDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ResourceVisibility {
+  PUBLIC
+  RESTRICTED
+}
+
+/// A named group that a RESTRICTED resource can be scoped to (e.g. a
+/// course cohort or department), and a user can belong to. There is no
+/// Group CRUD API in this task — groups are managed only via the dev
+/// seed — but the table is real and normalized, not a placeholder: it is
+/// what makes "restricted visibility" something the backend can actually
+/// check against the database, rather than a UI-only badge the way it
+/// was in Task 04 (see docs/domain/resources.md).
+model Group {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(160)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships      GroupMembership[]
+  resourceGroups   ResourceGroup[]
+  collectionGroups CollectionGroup[]
+
+  @@unique([name])
+  @@map("groups")
+}
+
+/// Many-to-many between User and Group. Both sides cascade: removing a
+/// user or a group removes their memberships, never leaves an orphaned
+/// row — membership has no meaning once either side is gone, unlike a
+/// Resource's ownership (see `Resource.ownerId` below, which is
+/// deliberately NOT cascading).
+model GroupMembership {
+  id        String   @id @default(uuid())
+  userId    String
+  groupId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([groupId])
+  @@map("group_memberships")
+}
+
+/// A minimal course reference — `CourseRefSchema` in
+/// `packages/contracts/src/resource.ts` is `{ id, title }`, and that is
+/// the entirety of what this task's contracts need a Course to carry.
+model Course {
+  id        String   @id @default(uuid())
+  title     String   @db.VarChar(160)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  resourceCourses ResourceCourse[]
+
+  @@unique([title])
+  @@map("courses")
+}
+
+/// A resource tag. Unlike Course/Group (curated, seed/admin-managed
+/// entities that a create/update request may only *reference* by id),
+/// tags are a lightweight folksonomy — the contract's `tags: string[]`
+/// has no notion of a tag "not existing yet", so the service layer
+/// find-or-creates one per normalized name on write rather than
+/// rejecting an unrecognized tag the way it rejects an unrecognized
+/// `courseId`/group id. See docs/domain/resources.md ("Tag vs. Course/
+/// Group association semantics") for the full reasoning — this is the
+/// one place this task resolves an ambiguity the contracts left open
+/// rather than one they specify directly.
+///
+/// `name` is normalized (trimmed + lowercased) by the service before
+/// every write and lookup, same discipline as `User.email` — but unlike
+/// email, a tag name collision has no security implication, so a plain
+/// `@unique` on the already-normalized value is sufficient; there is no
+/// functional-index equivalent needed here.
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(80)
+  createdAt DateTime @default(now())
+
+  resourceTags ResourceTag[]
+
+  @@unique([name])
+  @@map("tags")
+}
+
+/// The real, normalized Resource row backing `ResourceDetailSchema`/
+/// `ResourceSummarySchema`. A handful of fields are intentionally NOT
+/// exposed in the public DTO (see `modules/resources/resource.mapper.ts`):
+/// `ownerId` backs authorization (`policy.ts`'s `ownedBy<Subject>()`
+/// already anticipates this exact shape) and is never serialized to a
+/// client response.
+///
+/// `creatorName`/`creatorAffiliation` are flattened from the contract's
+/// nested `creator: { name, affiliation }` object — there is no separate
+/// Creator entity (a creator is not a reusable, identity-bearing row the
+/// way a Course or Group is; it is just descriptive text attached to one
+/// resource), so this is a column-flattening choice, not a contract
+/// change.
+///
+/// `durationSeconds` is nullable at the column level because the
+/// per-type requirement (`VIDEO`/`RECORDING` require it, every other
+/// type must omit it) is a discriminated-union rule in the contracts,
+/// not something a single column's type can express. It is enforced at
+/// two independent layers: the Zod contracts (create) and the service
+/// layer (update, since `ResourceUpdateInputSchema` is flat and must be
+/// checked against the *merged* resulting state — see
+/// `resource.service.ts`), plus a DB-level `CHECK` constraint added by
+/// hand in this model's migration as a third, defense-in-depth layer —
+/// same pattern as `User`'s case-insensitive email index: a DB
+/// invariant hand-written into migration SQL because Prisma's schema DSL
+/// cannot express it, and consequently invisible to `schema.prisma`
+/// (same future `prisma migrate dev`-drift sharp edge documented there,
+/// now also covering this constraint, see below).
+///
+/// `searchVector` is a Postgres `GENERATED ALWAYS AS ... STORED`
+/// `tsvector` column, maintained entirely by Postgres from `title`/
+/// `creatorName`/`publisher`/`description` on every insert/update —
+/// Prisma has no schema syntax for a generated column, so it is declared
+/// here only as an `Unsupported` type (so Prisma Client knows to leave it
+/// alone entirely) and the actual generation expression + its GIN index
+/// live solely in the migration SQL. See docs/domain/resources.md
+/// ("Search implementation") for why tag names are matched separately
+/// (via `pg_trgm`) rather than folded into this same vector.
+///
+/// Sharp edge (same family as `User`'s email index, now bigger): none of
+/// the `CHECK` constraint, the generated `searchVector` column, its GIN
+/// index, the `pg_trgm` extension, or the trigram index on `Tag.name` are
+/// expressible in `schema.prisma`. A future `prisma migrate dev` run
+/// diffs the *declared* schema against the database and may propose
+/// dropping/altering any of them as unrecognized drift — do not accept
+/// such a diff without checking it against this comment and the
+/// migration SQL first.
+model Resource {
+  id                 String             @id @default(uuid())
+  title              String             @db.VarChar(200)
+  description        String             @db.VarChar(4000)
+  type               ResourceType
+  difficulty         ResourceDifficulty
+  creatorName        String             @db.VarChar(160)
+  creatorAffiliation String?            @db.VarChar(160)
+  coverImageUrl      String?
+  sourceUrl          String?
+  publishedAt        DateTime?
+  publisher          String?            @db.VarChar(160)
+  durationSeconds    Int?
+  visibility         ResourceVisibility @default(PUBLIC)
+  ownerId            String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  /// See the model doc comment above — generated and indexed entirely in
+  /// migration SQL, never written to by the application.
+  searchVector Unsupported("tsvector")?
+
+  owner           User                 @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  tags            ResourceTag[]
+  courses         ResourceCourse[]
+  groups          ResourceGroup[]
+  collectionItems CollectionResource[]
+  savedBy         SavedResource[]
+  bookCopies      BookCopy[]
+
+  @@index([ownerId])
+  @@index([type])
+  @@index([difficulty])
+  @@index([visibility])
+  @@index([createdAt])
+  @@map("resources")
+}
+
+/// Join table, Resource <-> Tag. Composite PK (no separate `id`) — the
+/// pair is the identity; there is never a reason to reference "this
+/// specific tagging" independent of the (resource, tag) pair itself.
+model ResourceTag {
+  resourceId String
+  tagId      String
+
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([resourceId, tagId])
+  @@index([tagId])
+  @@map("resource_tags")
+}
+
+/// Join table, Resource <-> Course. Same composite-PK reasoning as
+/// `ResourceTag`.
+model ResourceCourse {
+  resourceId String
+  courseId   String
+
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([resourceId, courseId])
+  @@index([courseId])
+  @@map("resource_courses")
+}
+
+/// Join table, Resource <-> Group — backs `restrictedToGroupIds` on a
+/// `RESTRICTED` resource. A `PUBLIC` resource simply has no rows here;
+/// nothing distinguishes "public" from "restricted to zero groups" at
+/// this table alone — `Resource.visibility` is the authoritative field,
+/// this table only matters when it is `RESTRICTED`.
+model ResourceGroup {
+  resourceId String
+  groupId    String
+
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([resourceId, groupId])
+  @@index([groupId])
+  @@map("resource_groups")
+}
+
+// ---------------------------------------------------------------------
+// Collections domain (Task 06)
+// ---------------------------------------------------------------------
+
+enum CollectionVisibility {
+  PUBLIC
+  RESTRICTED
+}
+
+/// An ordered, named grouping of resources — a reading list, a course
+/// bundle, a topic the owner curated. Deliberately reuses `Resource` and
+/// `Group` rather than duplicating anything about either: a Collection
+/// only ever *references* resources (via `CollectionResource`) and
+/// groups (via `CollectionGroup`), the same relationship shape
+/// `ResourceCourse`/`ResourceGroup` already use for Resource's own
+/// associations.
+///
+/// `ownerId` is never serialized into the public DTO — same rule as
+/// `Resource.ownerId` (see that model's doc comment and
+/// `collection.mapper.ts`): `capabilities` is the one supported way a
+/// client learns whether it may edit/delete a collection.
+///
+/// Collection visibility and a *member resource's own* visibility are
+/// independent: a PUBLIC collection can still reference a RESTRICTED
+/// resource (e.g. an instructor's own restricted exercise, bundled
+/// alongside public readings), and a viewer who can see the collection
+/// is never thereby granted access to that resource — see
+/// `collection.service.ts`'s resource-item visibility filtering, which
+/// re-checks every item against the same `isResourceVisibleTo` policy
+/// `resource.service.ts` uses, independent of how the collection itself
+/// was reached.
+model Collection {
+  id            String               @id @default(uuid())
+  title         String               @db.VarChar(200)
+  description   String               @db.VarChar(4000)
+  coverImageUrl String?
+  visibility    CollectionVisibility @default(PUBLIC)
+  ownerId       String
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  owner  User                 @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  items  CollectionResource[]
+  groups CollectionGroup[]
+
+  @@index([ownerId])
+  @@index([visibility])
+  @@index([createdAt])
+  @@map("collections")
+}
+
+/// Join table, Collection <-> Resource, with an explicit `position` for
+/// display order. The composite unique constraint on
+/// `(collectionId, resourceId)` is the DB-level guarantee that the same
+/// resource can never appear twice in one collection (Prisma's own
+/// `@@unique` — no hand-written SQL needed, unlike the Resource domain's
+/// functional/generated-column constraints).
+///
+/// `position` is deliberately *not* itself constrained unique per
+/// collection — the only writer of this column is
+/// `collection.service.ts`'s add/remove/reorder logic, which always
+/// rewrites it as a clean, gapless, zero-indexed sequence inside one
+/// transaction (see that file for the row-locking strategy that keeps
+/// concurrent reorders from interleaving). A DB-level uniqueness
+/// constraint here would need to be `DEFERRABLE` to survive the
+/// intermediate states of a multi-row position rewrite, which Prisma's
+/// schema DSL cannot express — avoided entirely by not needing it: no
+/// code path other than that service ever writes this column.
+model CollectionResource {
+  id           String   @id @default(uuid())
+  collectionId String
+  resourceId   String
+  position     Int
+  createdAt    DateTime @default(now())
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  resource   Resource   @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, resourceId])
+  @@index([collectionId, position])
+  @@index([resourceId])
+  @@map("collection_resources")
+}
+
+/// Join table, Collection <-> Group — backs a `RESTRICTED` collection's
+/// visibility, the exact same shape `ResourceGroup` already uses for
+/// Resource. A `PUBLIC` collection simply has no rows here.
+model CollectionGroup {
+  collectionId String
+  groupId      String
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  group      Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, groupId])
+  @@index([groupId])
+  @@map("collection_groups")
+}
+
+// ---------------------------------------------------------------------
+// Bookmarks domain (Task 06)
+// ---------------------------------------------------------------------
+
+/// A user's personal "saved for later" marker on a resource — not a
+/// Collection (no ordering, no sharing, no visibility of its own) and
+/// not a loan (no due date, no physical copy). The composite unique
+/// constraint on `(userId, resourceId)` is the entire save/unsave
+/// invariant: a second save is either rejected or treated as a no-op by
+/// the service layer (see `bookmark.service.ts`), never a duplicate row.
+/// Saving a resource does not change who may *see* it — a saved
+/// resource that later becomes inaccessible (e.g. its visibility
+/// changes, or the saver loses group membership) is filtered out of
+/// `GET /bookmarks` by the same `isResourceVisibleTo` policy every other
+/// read path uses, not hidden by deleting the bookmark row itself.
+model SavedResource {
+  id         String   @id @default(uuid())
+  userId     String
+  resourceId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceId])
+  @@index([resourceId])
+  @@map("saved_resources")
+}
+
+// ---------------------------------------------------------------------
+// Physical Library domain (Task 07) — see
+// apps/api/src/modules/physical-library/physicalLibrary.provider.ts for
+// the `PhysicalLibraryProvider` interface this domain is accessed
+// through: a local, Prisma-backed implementation today, isolated behind
+// that interface so a future `DepotProvider` (the real circulation-desk
+// system) can become the authoritative source without any route,
+// service, or frontend change — see that file's doc comment for the
+// full rationale. Every write below goes through
+// `localPhysicalLibraryProvider.ts`, the ONLY implementation registered
+// today — never a second, competing code path into these tables.
+// ---------------------------------------------------------------------
+
+enum BookCopyStatus {
+  AVAILABLE
+  ON_LOAN
+  ARCHIVED
+}
+
+enum LoanStatus {
+  ACTIVE
+  RETURNED
+}
+
+/// One physical, shelvable copy of a `BOOK`-type Resource. Only ever
+/// created for a `BOOK` resource (enforced in
+/// `localPhysicalLibraryProvider.ts`, not at the schema level — Prisma
+/// cannot express "resourceId must reference a Resource whose type is
+/// BOOK" as a constraint).
+///
+/// `inventoryCode` is the "unique inventory identifier" the task brief
+/// asks for — a real-world accession/barcode number, assigned by staff
+/// on registration, globally unique (not just per-resource) the same
+/// way a real library never reuses a barcode across titles.
+///
+/// `status` only ever transitions AVAILABLE -> ON_LOAN -> AVAILABLE
+/// (via the loan lifecycle below) or AVAILABLE -> ARCHIVED (a direct
+/// admin action, retiring a lost/damaged copy without deleting its
+/// loan history) — ARCHIVED is terminal, and ON_LOAN -> ARCHIVED is
+/// never allowed directly (a copy must be returned first). See
+/// `physicalLibrary.service.ts` for where these transitions are
+/// actually enforced; this column has no DB-level CHECK constraint
+/// restricting *which* transitions are legal, same as every other
+/// lifecycle status in this codebase (e.g. `Collection`/`Resource`
+/// have no DB-level state machine either) — the transactional service
+/// layer is the sole writer and the sole enforcer.
+model BookCopy {
+  id            String         @id @default(uuid())
+  resourceId    String
+  inventoryCode String         @db.VarChar(64)
+  status        BookCopyStatus @default(AVAILABLE)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  /// `Restrict`, not `Cascade` — deleting a Resource that still has
+  /// physical copies on record (even ARCHIVED ones, which still carry
+  /// real loan history) must fail loudly rather than silently destroy
+  /// that history. See `resource.service.ts`'s `deleteResource`, which
+  /// checks for this up front and returns a clean `409` rather than
+  /// letting this constraint surface as a raw database error — the
+  /// "handle deletion of resources with loan history safely"
+  /// requirement.
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  loans    Loan[]
+
+  @@unique([inventoryCode])
+  @@index([resourceId])
+  @@index([status])
+  @@map("book_copies")
+}
+
+/// One borrowing of one `BookCopy` by one `User`. `ACTIVE` ->
+/// `RETURNED` is the entire lifecycle — `RETURNED` is terminal, and
+/// "overdue" is deliberately NOT a stored status (it would need a
+/// background job to transition loans at midnight on their due date,
+/// which the task brief explicitly says to avoid building): it is
+/// computed at read time from `status === 'ACTIVE' && dueAt < now`,
+/// see `physicalLibrary.mapper.ts`'s `isOverdue`.
+///
+/// "Reserving" a copy (per the task brief's "borrow/reserve") IS
+/// borrowing it in this system — there is no separate hold/waitlist
+/// queue for a copy that is currently `ON_LOAN`; a copy must be
+/// `AVAILABLE` to be borrowed. A deliberate, documented scope
+/// boundary (see physicalLibrary.service.ts), not an oversight.
+///
+/// Sharp edge, same family as `Resource.searchVector`/`User`'s
+/// functional email index: a hand-written **partial unique index**
+/// guaranteeing at most one `ACTIVE` loan per copy at any time
+/// (`CREATE UNIQUE INDEX ... ON loans ("copyId") WHERE status =
+/// 'ACTIVE'`) lives only in this model's migration SQL — Prisma's
+/// schema DSL has no syntax for a partial/filtered unique index, so it
+/// is invisible here. This is defense-in-depth *underneath* the
+/// row-locked transaction that is the actual, primary guarantee (see
+/// `localPhysicalLibraryProvider.ts`'s `lockResourceForUpdate`): even a
+/// future code path that forgets to take that lock correctly cannot
+/// create two concurrent active loans for the same copy, because the
+/// database itself refuses the second insert.
+model Loan {
+  id         String     @id @default(uuid())
+  copyId     String
+  userId     String
+  status     LoanStatus @default(ACTIVE)
+  borrowedAt DateTime   @default(now())
+  dueAt      DateTime
+  returnedAt DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  /// Both `Restrict` — a loan is a historical/audit record. Neither the
+  /// copy nor the borrower can be deleted out from under it. (There is
+  /// no user-deletion feature anywhere in this codebase today, so the
+  /// `userId` restriction is schema hygiene consistent with
+  /// `Resource.ownerId`/`Collection.ownerId` rather than something any
+  /// current code path exercises.)
+  copy BookCopy @relation(fields: [copyId], references: [id], onDelete: Restrict)
+  user User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status])
+  @@index([copyId])
+  @@index([dueAt])
+  @@map("loans")
+}

@@ -1,0 +1,21 @@
+/*
+ * No explicit `height` here on purpose. In grid mode the cover must size
+ * from `aspect-ratio` (set by `.grid .cover` in ResourceCard.module.css);
+ * in list mode it's stretched to match the row by the parent flex
+ * container's `align-items: stretch`. An explicit `height: 100%` would
+ * win over `aspect-ratio` in grid mode (a percentage height always
+ * resolves before aspect-ratio does), forcing the cover to match its
+ * grid-stretched `<li>` ancestor's full height and squeezing the card's
+ * text body out of the visible, overflow-hidden card entirely.
+ */
+.frame {
+  width: 100%;
+  overflow: hidden;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

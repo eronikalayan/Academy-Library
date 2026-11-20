@@ -1,0 +1,137 @@
+.sidebar {
+  /* Always dark, independent of the app theme — see the comment in
+     AppSidebar.tsx. These mirror tokens.css's dark-theme values exactly;
+     keep them in sync if that palette changes. */
+  --color-bg: #0b0e18;
+  --color-bg-subtle: #11141f;
+  --color-surface: #141827;
+  --color-surface-hover: #1b2032;
+  --color-border: #262b3d;
+  --color-border-strong: #383f57;
+  --color-text-primary: #f1f2f7;
+  --color-text-secondary: #a8adc0;
+  --color-text-muted: #7d8299;
+  --color-accent: #9284e9;
+  --color-accent-subtle: #241f42;
+  --color-accent-subtle-text: #c3b8f7;
+  --color-focus-ring: #9284e9;
+
+  display: flex;
+  flex-direction: column;
+  width: var(--layout-sidebar-width);
+  flex-shrink: 0;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  background-color: var(--color-bg);
+  border-right: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  transition: width var(--duration-base) var(--ease-standard);
+}
+
+.collapsed {
+  width: var(--layout-sidebar-width-collapsed);
+}
+
+.brandRow {
+  flex-shrink: 0;
+  padding: var(--space-5) var(--space-4);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.brandIcon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  color: var(--color-accent);
+}
+
+.brandWordmark {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-tight);
+  white-space: nowrap;
+}
+
+.navScroll {
+  flex: 1;
+  min-height: 0;
+  /* Deliberately not a scroll container: `overflow-y: auto` here would
+     force `overflow-x` to behave as `auto` too (per spec, mixing
+     `visible` with a non-visible value on the other axis), which clips
+     the collapsed-state Tooltip that needs to escape horizontally. The
+     nav list (10 items max) never actually reaches 100vh in practice. */
+}
+
+.footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.footerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.collapsed .footerRow {
+  flex-direction: column;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.profileText {
+  min-width: 0;
+}
+
+.profileName {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileRole {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collapseButton {
+  flex-shrink: 0;
+}
+
+/* Below laptop width, navigation is a drawer instead (MobileNavDrawer). */
+@media (max-width: 1023px) {
+  .sidebar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
+}

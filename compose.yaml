@@ -1,0 +1,82 @@
+name: academy-library
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-academy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-academy}
+      POSTGRES_DB: ${POSTGRES_DB:-academy_library}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-academy} -d ${POSTGRES_DB:-academy_library}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: build
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-academy}:${POSTGRES_PASSWORD:-academy}@postgres:5432/${POSTGRES_DB:-academy_library}?schema=public
+    command: ['pnpm', '--filter', '@academy-library/api', 'db:migrate:deploy']
+    restart: 'no'
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      HOST: 0.0.0.0
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-academy}:${POSTGRES_PASSWORD:-academy}@postgres:5432/${POSTGRES_DB:-academy_library}?schema=public
+      # Required — the server refuses to start without it (see
+      # docs/architecture/authentication.md, "Cookie policy"/"CSRF
+      # strategy"). Set a real one via the root .env for anything beyond
+      # local Compose testing; generate with `openssl rand -hex 32`.
+      CSRF_SECRET: ${CSRF_SECRET:?CSRF_SECRET must be set in the root .env — generate with `openssl rand -hex 32`}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-academy_session}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-720}
+    ports:
+      - '${API_PORT:-4000}:4000'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:4000/api/v1/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '${WEB_PORT:-8080}:8080'
+
+volumes:
+  postgres-data:
