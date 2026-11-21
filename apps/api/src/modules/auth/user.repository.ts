@@ -1,15 +1,9 @@
 import type { PublicUser } from '@academy-library/contracts';
 import type { User } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
+import { normalizeEmail } from './normalizeEmail.js';
 
-/** Trim + lowercase — the one normalization rule applied before every
- * write and every lookup, so the two always agree on what "the same
- * email" means. The database's `users_email_lower_key` functional index
- * (see prisma/schema.prisma) is the safety net if this is ever bypassed,
- * not the primary mechanism. */
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
+export { normalizeEmail } from './normalizeEmail.js';
 
 /** The only place a Prisma `User` is turned into the DTO a client is
  * allowed to see — `passwordHash` never leaves this function's input. */
